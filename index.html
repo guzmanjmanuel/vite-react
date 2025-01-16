@@ -1,13 +1,144 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
+import React, { useRef, useState } from 'react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+
+const PadFirma = () => {
+  const canvasRef = useRef(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [firma, setFirma] = useState(null);
+  const [contexto, setContexto] = useState(null);
+
+  // Inicializar el canvas
+  const iniciarCanvas = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 2;
+    setContexto(ctx);
+    
+    // Limpiar el canvas
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  };
+
+  // Comenzar a dibujar
+  const iniciarDibujo = (e) => {
+    e.preventDefault(); // Prevenir scroll en móviles
+    setIsDrawing(true);
+    const { offsetX, offsetY } = obtenerCoordenadas(e);
+    contexto.beginPath();
+    contexto.moveTo(offsetX, offsetY);
+  };
+
+  // Dibujar
+  const dibujar = (e) => {
+    e.preventDefault();
+    if (!isDrawing) return;
+    
+    const { offsetX, offsetY } = obtenerCoordenadas(e);
+    contexto.lineTo(offsetX, offsetY);
+    contexto.stroke();
+  };
+
+  // Terminar de dibujar
+  const terminarDibujo = () => {
+    setIsDrawing(false);
+    // Guardar la firma como imagen
+    const canvas = canvasRef.current;
+    setFirma(canvas.toDataURL());
+  };
+
+  // Obtener coordenadas para eventos táctiles y mouse
+  const obtenerCoordenadas = (e) => {
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    
+    let clientX, clientY;
+    
+    if (e.touches && e.touches[0]) {
+      // Evento táctil
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      // Evento de mouse
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+    
+    return {
+      offsetX: clientX - rect.left,
+      offsetY: clientY - rect.top
+    };
+  };
+
+  // Limpiar firma
+  const limpiarFirma = () => {
+    const canvas = canvasRef.current;
+    contexto.fillStyle = '#ffffff';
+    contexto.fillRect(0, 0, canvas.width, canvas.height);
+    setFirma(null);
+  };
+
+  // Guardar firma
+  const guardarFirma = () => {
+    if (firma) {
+      // Aquí podrías enviar la firma a tu servidor
+      console.log('Firma guardada:', firma);
+      alert('¡Firma guardada con éxito!');
+    } else {
+      alert('Por favor, realiza una firma antes de guardar');
+    }
+  };
+
+  React.useEffect(() => {
+    iniciarCanvas();
+  }, []);
+
+  return (
+    <Card className="max-w-lg mx-auto mt-8">
+      <CardHeader>
+        <CardTitle className="text-xl font-bold text-center">Firma Digital</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="border rounded p-2 bg-white">
+          <canvas
+            ref={canvasRef}
+            width={400}
+            height={200}
+            className="border border-gray-300 touch-none"
+            onMouseDown={iniciarDibujo}
+            onMouseMove={dibujar}
+            onMouseUp={terminarDibujo}
+            onMouseLeave={terminarDibujo}
+            onTouchStart={iniciarDibujo}
+            onTouchMove={dibujar}
+            onTouchEnd={terminarDibujo}
+          />
+        </div>
+        
+        <div className="flex justify-center space-x-4">
+          <button
+            onClick={limpiarFirma}
+            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+          >
+            Borrar
+          </button>
+          <button
+            onClick={guardarFirma}
+            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+          >
+            Guardar
+          </button>
+        </div>
+
+        {firma && (
+          <div className="mt-4">
+            <p className="text-sm text-gray-600 mb-2">Vista previa de la firma:</p>
+            <img src={firma} alt="Firma" className="border rounded" />
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+export default PadFirma;
