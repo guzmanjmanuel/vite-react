@@ -1,0 +1,101 @@
+import React, { useRef, useState, useEffect } from 'react';
+
+const SignaturePad = () => {
+  const canvasRef = useRef(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [context, setContext] = useState(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = 2;
+    ctx.lineCap = 'round';
+    setContext(ctx);
+  }, []);
+
+  const startDrawing = (e) => {
+    const { offsetX, offsetY } = getCoordinates(e);
+    context.beginPath();
+    context.moveTo(offsetX, offsetY);
+    setIsDrawing(true);
+  };
+
+  const draw = (e) => {
+    if (!isDrawing) return;
+    const { offsetX, offsetY } = getCoordinates(e);
+    context.lineTo(offsetX, offsetY);
+    context.stroke();
+  };
+
+  const stopDrawing = () => {
+    context.closePath();
+    setIsDrawing(false);
+  };
+
+  const getCoordinates = (e) => {
+    const rect = canvasRef.current.getBoundingClientRect();
+    const scaleX = canvasRef.current.width / rect.width;
+    const scaleY = canvasRef.current.height / rect.height;
+
+    if (e.touches && e.touches[0]) {
+      return {
+        offsetX: (e.touches[0].clientX - rect.left) * scaleX,
+        offsetY: (e.touches[0].clientY - rect.top) * scaleY
+      };
+    }
+    return {
+      offsetX: (e.clientX - rect.left) * scaleX,
+      offsetY: (e.clientY - rect.top) * scaleY
+    };
+  };
+
+  const clearSignature = () => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+  };
+
+  const saveSignature = () => {
+    const canvas = canvasRef.current;
+    const dataUrl = canvas.toDataURL('image/png');
+    // You can handle the signature data URL here
+    console.log('Signature saved:', dataUrl);
+  };
+
+  return (
+    <div className="flex flex-col items-center p-4 border rounded-lg shadow-md bg-white">
+      <div className="relative w-full max-w-lg">
+        <canvas
+          ref={canvasRef}
+          width={600}
+          height={200}
+          className="border border-gray-300 rounded touch-none w-full"
+          onMouseDown={startDrawing}
+          onMouseMove={draw}
+          onMouseUp={stopDrawing}
+          onMouseLeave={stopDrawing}
+          onTouchStart={startDrawing}
+          onTouchMove={draw}
+          onTouchEnd={stopDrawing}
+        />
+      </div>
+      <div className="flex gap-4 mt-4">
+        <button
+          onClick={clearSignature}
+          className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors"
+        >
+          Clear
+        </button>
+        <button
+          onClick={saveSignature}
+          className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition-colors"
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default SignaturePad;
